@@ -1,25 +1,15 @@
-// app/components/PottyForm.tsx
-import React, { useState, useEffect } from "react";
+// app/components/pottyForm.tsx
+import React, { useState } from "react";
 import {
   View,
   Text,
   TextInput,
   Button,
-  StyleSheet,
-  ScrollView,
+  FlatList,
+  TouchableOpacity,
 } from "react-native";
 import { supabase } from "../../utils/supabase";
-import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
-import * as Location from "expo-location";
-import MapView, { Marker } from "react-native-maps";
-
-type PottyRule = {
-  pottyRule: string;
-};
-
-type PottyType = {
-  pottyType: string;
-};
+import GeocoderAutocomplete from "@geoapify/geocoder-autocomplete";
 
 const PottyForm = () => {
   const [pottyName, setPottyName] = useState("");
@@ -27,57 +17,28 @@ const PottyForm = () => {
   const [pottyRule, setPottyRule] = useState("");
   const [pottyNotes, setPottyNotes] = useState("");
   const [pottyType, setPottyType] = useState("");
-  const [pottyRules, setPottyRules] = useState<PottyRule[]>([]);
-  const [pottyTypes, setPottyTypes] = useState<PottyType[]>([]);
-  const [location, setLocation] = useState<Location.LocationObject | null>(
-    null
-  );
-  const [mapRegion, setMapRegion] = useState({
-    latitude: 37.78825,
-    longitude: -122.4324,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  });
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data: rulesData } = await supabase
-        .from("PottyRules")
-        .select("pottyRule");
-      const { data: typesData } = await supabase
-        .from("PottyTypes")
-        .select("pottyType");
-      setPottyRules(rulesData || []);
-      setPottyTypes(typesData || []);
-    };
-
-    fetchData();
-
-    const requestLocation = async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        console.log("Permission to access location was denied");
-        return;
-      }
-
-      const userLocation = await Location.getCurrentPositionAsync({});
-      setLocation(userLocation);
-      setMapRegion({
-        ...mapRegion,
-        latitude: userLocation.coords.latitude,
-        longitude: userLocation.coords.longitude,
+  const handleAddressChange = async (text) => {
+    setPottyAddress(text);
+    if (text.length > 3) {
+      const response = await GeocoderAutocomplete({
+        apiKey: process.env.GEOAPIFY_AUTOCOMPLETE_API_KEY,
+        text: text,
+        limit: 5,
       });
-    };
+      setAddressSuggestions(response.features);
+    }
+  };
 
-    requestLocation();
-  }, []);
+  const handleAddressSelect = (address, location) => {
+    setPottyAddress(address);
+    setSelectedLocation(location);
+    setAddressSuggestions([]);
+  };
 
   const handleSubmit = async () => {
-    if (!location) {
-      alert("Location not available");
-      return;
-    }
-
     const { data, error } = await supabase.from("PottyList").insert([
       {
         pottyName,
@@ -85,127 +46,82 @@ const PottyForm = () => {
         pottyRule,
         pottyNotes,
         pottyType,
-        location: {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        },
+        location: selectedLocation,
       },
     ]);
 
     if (error) {
-      alert("Error submitting data");
-      console.error(error);
+      console.error("Error inserting data:", error);
     } else {
-      alert("Data submitted successfully");
+      console.log("Data inserted:", data);
+      // Clear form
       setPottyName("");
       setPottyAddress("");
       setPottyRule("");
       setPottyNotes("");
       setPottyType("");
+      setSelectedLocation(null);
     }
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.label}>Potty Name</Text>
-      <TextInput
-        style={styles.input}
-        value={pottyName}
-        onChangeText={setPottyName}
+    <View>
+      <Text>Potty Name</Text>
+      <TextInput value={pottyName} onChangeText={setPottyName} />
+
+      <Text>Potty Address</Text>
+      <TextInput value={pottyAddress} onChangeText={handleAddressChange} />
+      <FlatList
+        data={addressSuggestions}
+        keyExtractor={(item) => item.properties.place_id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={() =>
+              handleAddressSelect(
+                item.properties.formatted,
+                item.geometry.coordinates
+              )
+            }
+          >
+            <Text>{item.properties.formatted}</Text>
+          </TouchableOpacity>
+        )}
       />
 
-      <Text style={styles.label}>Potty Address</Text>
-      <GooglePlacesAutocomplete
-        placeholder="Enter Address"
-        onPress={(data, details = null) => {
-          setPottyAddress(data.description);
-          if (details) {
-            setLocation({
-              coords: {
-                latitude: details.geometry.location.lat,
-                longitude: details.geometry.location.lng,
-              },
-              timestamp: Date.now(),
-            });
-            setMapRegion({
-              ...mapRegion,
-              latitude: details.geometry.location.lat,
-              longitude: details.geometry.location.lng,
-            });
-          }
-        }}
-        query={{
-          key: "YOUR_GOOGLE_PLACES_API_KEY",
-          language: "en",
-        }}
-        styles={{
-          textInput: styles.input,
-        }}
-      />
+      <Text>Potty Rule</Text>
+      <Picker
+        selectedValue={pottyRule}
+        onValueChange={(itemValue) => setPottyRule(itemValue)}
+      >
+        {pottyRules.map((rule, index) => (
+          <Picker.Item
+            key={index}
+            label={rule.pottyRule}
+            value={rule.pottyRule}
+          />
+        ))}
+      </Picker>
 
-      <Text style={styles.label}>Potty Rule</Text>
-      <TextInput
-        style={styles.input}
-        value={pottyRule}
-        onChangeText={setPottyRule}
-      />
+      <Text>Potty Notes</Text>
+      <TextInput value={pottyNotes} onChangeText={setPottyNotes} />
 
-      <Text style={styles.label}>Potty Notes</Text>
-      <TextInput
-        style={styles.input}
-        value={pottyNotes}
-        onChangeText={setPottyNotes}
-      />
-
-      <Text style={styles.label}>Potty Type</Text>
-      <TextInput
-        style={styles.input}
-        value={pottyType}
-        onChangeText={setPottyType}
-      />
+      <Text>Potty Type</Text>
+      <Picker
+        selectedValue={pottyType}
+        onValueChange={(itemValue) => setPottyType(itemValue)}
+      >
+        {pottyTypes.map((type, index) => (
+          <Picker.Item
+            key={index}
+            label={type.pottyType}
+            value={type.pottyType}
+          />
+        ))}
+      </Picker>
 
       <Button title="Submit" onPress={handleSubmit} />
-
-      {location && (
-        <MapView
-          style={styles.map}
-          region={mapRegion}
-          onRegionChangeComplete={setMapRegion}
-        >
-          <Marker
-            coordinate={{
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            }}
-            title={pottyName}
-            description={pottyNotes}
-          />
-        </MapView>
-      )}
-    </ScrollView>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  input: {
-    height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
-    marginBottom: 12,
-    padding: 8,
-  },
-  map: {
-    width: "100%",
-    height: 200,
-    marginTop: 20,
-  },
-});
 
 export default PottyForm;

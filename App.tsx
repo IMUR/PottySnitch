@@ -1,7 +1,7 @@
 // App.tsx
 import React from "react";
 import { SafeAreaView, ScrollView, StyleSheet, View, Text } from "react-native";
-import PottyForm from "./app/components/PottyForm";
+import PottyForm from "./app/components/pottyForm";
 import { StatusBar } from "expo-status-bar";
 
 export default function App() {

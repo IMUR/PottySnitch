@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@geoapify/geocoder-autocomplete": "^2.0.1",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@supabase/supabase-js": "^2.44.2",
     "expo": "~51.0.17",
