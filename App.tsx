@@ -1,24 +1,17 @@
+// App.tsx
 import React from "react";
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View, SafeAreaView, ScrollView } from "react-native";
+import { SafeAreaView, ScrollView, StyleSheet, View, Text } from "react-native";
 import PottyForm from "./app/components/PottyForm";
+import { StatusBar } from "expo-status-bar";
 
 export default function App() {
   return (
-    <SafeAreaView>
+    <SafeAreaView style={styles.container}>
       <ScrollView>
         <PottyForm />
       </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
       <StatusBar style="auto" />
-    </View>
+    </SafeAreaView>
   );
 }
 

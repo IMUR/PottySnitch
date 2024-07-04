@@ -1,7 +1,25 @@
 // app/components/PottyForm.tsx
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Button, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
 import { supabase } from "../../utils/supabase";
+import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
+import * as Location from "expo-location";
+import MapView, { Marker } from "react-native-maps";
+
+type PottyRule = {
+  pottyRule: string;
+};
+
+type PottyType = {
+  pottyType: string;
+};
 
 const PottyForm = () => {
   const [pottyName, setPottyName] = useState("");
@@ -9,8 +27,17 @@ const PottyForm = () => {
   const [pottyRule, setPottyRule] = useState("");
   const [pottyNotes, setPottyNotes] = useState("");
   const [pottyType, setPottyType] = useState("");
-  const [pottyRules, setPottyRules] = useState([]);
-  const [pottyTypes, setPottyTypes] = useState([]);
+  const [pottyRules, setPottyRules] = useState<PottyRule[]>([]);
+  const [pottyTypes, setPottyTypes] = useState<PottyType[]>([]);
+  const [location, setLocation] = useState<Location.LocationObject | null>(
+    null
+  );
+  const [mapRegion, setMapRegion] = useState({
+    latitude: 37.78825,
+    longitude: -122.4324,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -25,12 +52,29 @@ const PottyForm = () => {
     };
 
     fetchData();
+
+    const requestLocation = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        console.log("Permission to access location was denied");
+        return;
+      }
+
+      const userLocation = await Location.getCurrentPositionAsync({});
+      setLocation(userLocation);
+      setMapRegion({
+        ...mapRegion,
+        latitude: userLocation.coords.latitude,
+        longitude: userLocation.coords.longitude,
+      });
+    };
+
+    requestLocation();
   }, []);
 
   const handleSubmit = async () => {
-    const location = await geocodeAddress(pottyAddress);
     if (!location) {
-      alert("Invalid address");
+      alert("Location not available");
       return;
     }
 
@@ -41,7 +85,10 @@ const PottyForm = () => {
         pottyRule,
         pottyNotes,
         pottyType,
-        location,
+        location: {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        },
       },
     ]);
 
@@ -58,30 +105,8 @@ const PottyForm = () => {
     }
   };
 
-  const geocodeAddress = async (
-    address: string
-  ): Promise<{ latitude: number; longitude: number } | null> => {
-    // Geocode the address using a geocoding API and return the coordinates
-    try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-          address
-        )}&key=YOUR_API_KEY`
-      );
-      const data = await response.json();
-      if (data.results.length > 0) {
-        const location = data.results[0].geometry.location;
-        return { latitude: location.lat, longitude: location.lng };
-      }
-      return null;
-    } catch (error) {
-      console.error("Geocoding error:", error);
-      return null;
-    }
-  };
-
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <Text style={styles.label}>Potty Name</Text>
       <TextInput
         style={styles.input}
@@ -90,10 +115,32 @@ const PottyForm = () => {
       />
 
       <Text style={styles.label}>Potty Address</Text>
-      <TextInput
-        style={styles.input}
-        value={pottyAddress}
-        onChangeText={setPottyAddress}
+      <GooglePlacesAutocomplete
+        placeholder="Enter Address"
+        onPress={(data, details = null) => {
+          setPottyAddress(data.description);
+          if (details) {
+            setLocation({
+              coords: {
+                latitude: details.geometry.location.lat,
+                longitude: details.geometry.location.lng,
+              },
+              timestamp: Date.now(),
+            });
+            setMapRegion({
+              ...mapRegion,
+              latitude: details.geometry.location.lat,
+              longitude: details.geometry.location.lng,
+            });
+          }
+        }}
+        query={{
+          key: "YOUR_GOOGLE_PLACES_API_KEY",
+          language: "en",
+        }}
+        styles={{
+          textInput: styles.input,
+        }}
       />
 
       <Text style={styles.label}>Potty Rule</Text>
@@ -118,7 +165,24 @@ const PottyForm = () => {
       />
 
       <Button title="Submit" onPress={handleSubmit} />
-    </View>
+
+      {location && (
+        <MapView
+          style={styles.map}
+          region={mapRegion}
+          onRegionChangeComplete={setMapRegion}
+        >
+          <Marker
+            coordinate={{
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            }}
+            title={pottyName}
+            description={pottyNotes}
+          />
+        </MapView>
+      )}
+    </ScrollView>
   );
 };
 
@@ -136,6 +200,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 12,
     padding: 8,
+  },
+  map: {
+    width: "100%",
+    height: 200,
+    marginTop: 20,
   },
 });
 
