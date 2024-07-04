@@ -1,5 +1,17 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from "react";
+import { StatusBar } from "expo-status-bar";
+import { StyleSheet, Text, View, SafeAreaView, ScrollView } from "react-native";
+import PottyForm from "./app/components/PottyForm";
+
+export default function App() {
+  return (
+    <SafeAreaView>
+      <ScrollView>
+        <PottyForm />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
 
 export default function App() {
   return (
@@ -13,8 +25,8 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

@@ -1,7 +1,7 @@
 // app/components/PottyForm.tsx
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, Button, StyleSheet } from "react-native";
-import { supabase } from "../utils/supabase";
+import { supabase } from "../../utils/supabase";
 
 const PottyForm = () => {
   const [pottyName, setPottyName] = useState("");
@@ -20,15 +20,14 @@ const PottyForm = () => {
       const { data: typesData } = await supabase
         .from("PottyTypes")
         .select("pottyType");
-      setPottyRules(rulesData);
-      setPottyTypes(typesData);
+      setPottyRules(rulesData || []);
+      setPottyTypes(typesData || []);
     };
 
     fetchData();
   }, []);
 
   const handleSubmit = async () => {
-    // Geocode address and get location (latitude, longitude)
     const location = await geocodeAddress(pottyAddress);
     if (!location) {
       alert("Invalid address");
@@ -51,7 +50,6 @@ const PottyForm = () => {
       console.error(error);
     } else {
       alert("Data submitted successfully");
-      // Clear form
       setPottyName("");
       setPottyAddress("");
       setPottyRule("");
@@ -60,9 +58,26 @@ const PottyForm = () => {
     }
   };
 
-  const geocodeAddress = async (address) => {
-    // Use a geocoding API to get the location coordinates for the given address
-    // This function should return an object with latitude and longitude
+  const geocodeAddress = async (
+    address: string
+  ): Promise<{ latitude: number; longitude: number } | null> => {
+    // Geocode the address using a geocoding API and return the coordinates
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          address
+        )}&key=YOUR_API_KEY`
+      );
+      const data = await response.json();
+      if (data.results.length > 0) {
+        const location = data.results[0].geometry.location;
+        return { latitude: location.lat, longitude: location.lng };
+      }
+      return null;
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      return null;
+    }
   };
 
   return (
