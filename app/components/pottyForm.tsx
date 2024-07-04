@@ -8,10 +8,8 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { supabase } from "../utils/supabase";
-import GeocoderAutocomplete, {
-  GeocoderAutocompleteFeature,
-} from "@geoapify/geocoder-autocomplete";
+import { supabase } from "../../utils/supabase";
+import GeocoderAutocomplete from "@geoapify/geocoder-autocomplete";
 
 interface Suggestion {
   properties: {
@@ -85,7 +83,6 @@ const PottyForm = () => {
       console.error("Error inserting data:", error);
     } else {
       console.log("Data inserted:", data);
-      // Clear form
       setPottyName("");
       setPottyAddress("");
       setPottyRule("");
