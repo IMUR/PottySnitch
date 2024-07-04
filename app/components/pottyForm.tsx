@@ -1,5 +1,5 @@
 // app/components/pottyForm.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,19 @@ import {
   FlatList,
   TouchableOpacity,
 } from "react-native";
+import { Picker } from "@react-native-picker/picker"; // Import Picker from the correct library
 import { supabase } from "../../utils/supabase";
 import GeocoderAutocomplete from "@geoapify/geocoder-autocomplete";
+
+interface Suggestion {
+  properties: {
+    formatted: string;
+    place_id: string;
+  };
+  geometry: {
+    coordinates: [number, number];
+  };
+}
 
 const PottyForm = () => {
   const [pottyName, setPottyName] = useState("");
@@ -17,14 +28,35 @@ const PottyForm = () => {
   const [pottyRule, setPottyRule] = useState("");
   const [pottyNotes, setPottyNotes] = useState("");
   const [pottyType, setPottyType] = useState("");
-  const [addressSuggestions, setAddressSuggestions] = useState([]);
-  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [pottyRules, setPottyRules] = useState([]);
+  const [pottyTypes, setPottyTypes] = useState([]);
+  const [addressSuggestions, setAddressSuggestions] = useState<Suggestion[]>(
+    []
+  );
+  const [selectedLocation, setSelectedLocation] = useState<
+    [number, number] | null
+  >(null);
 
-  const handleAddressChange = async (text) => {
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      const { data: rules } = await supabase
+        .from("PottyRules")
+        .select("pottyRule");
+      const { data: types } = await supabase
+        .from("PottyTypes")
+        .select("pottyType");
+      setPottyRules(rules || []);
+      setPottyTypes(types || []);
+    };
+
+    fetchDropdownData();
+  }, []);
+
+  const handleAddressChange = async (text: string) => {
     setPottyAddress(text);
     if (text.length > 3) {
       const response = await GeocoderAutocomplete({
-        apiKey: process.env.GEOAPIFY_AUTOCOMPLETE_API_KEY,
+        apiKey: process.env.GEOAPIFY_AUTOCOMPLETE_API_KEY!,
         text: text,
         limit: 5,
       });
@@ -32,7 +64,7 @@ const PottyForm = () => {
     }
   };
 
-  const handleAddressSelect = (address, location) => {
+  const handleAddressSelect = (address: string, location: [number, number]) => {
     setPottyAddress(address);
     setSelectedLocation(location);
     setAddressSuggestions([]);
