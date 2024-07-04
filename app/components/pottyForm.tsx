@@ -55,7 +55,7 @@ const PottyForm = () => {
     setPottyAddress(text);
     if (text.length > 3) {
       const response = await fetch(
-        `https://api.geoapify.com/v1/geocode/autocomplete?text=${text}&apiKey=${process.env.GEOAPIFY_AUTOCOMPLETE_API_KEY}`
+        `https://api.geoapify.com/v1/geocode/autocomplete?text=${text}&apiKey=${process.env.EXPO_PUBLIC_GEOAPIFY_API_KEY}`
       ).then((res) => res.json());
       setAddressSuggestions(response.features);
     }
