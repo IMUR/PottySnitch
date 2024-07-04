@@ -1,4 +1,3 @@
-// app/components/pottyForm.tsx
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -8,9 +7,11 @@ import {
   FlatList,
   TouchableOpacity,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker"; // Import Picker from the correct library
-import { supabase } from "../../utils/supabase";
-import GeocoderAutocomplete from "@geoapify/geocoder-autocomplete";
+import { Picker } from "@react-native-picker/picker";
+import { supabase } from "../utils/supabase";
+import GeocoderAutocomplete, {
+  GeocoderAutocompleteFeature,
+} from "@geoapify/geocoder-autocomplete";
 
 interface Suggestion {
   properties: {
@@ -28,8 +29,8 @@ const PottyForm = () => {
   const [pottyRule, setPottyRule] = useState("");
   const [pottyNotes, setPottyNotes] = useState("");
   const [pottyType, setPottyType] = useState("");
-  const [pottyRules, setPottyRules] = useState([]);
-  const [pottyTypes, setPottyTypes] = useState([]);
+  const [pottyRules, setPottyRules] = useState<{ pottyRule: string }[]>([]);
+  const [pottyTypes, setPottyTypes] = useState<{ pottyType: string }[]>([]);
   const [addressSuggestions, setAddressSuggestions] = useState<Suggestion[]>(
     []
   );
@@ -55,11 +56,9 @@ const PottyForm = () => {
   const handleAddressChange = async (text: string) => {
     setPottyAddress(text);
     if (text.length > 3) {
-      const response = await GeocoderAutocomplete({
-        apiKey: process.env.GEOAPIFY_AUTOCOMPLETE_API_KEY!,
-        text: text,
-        limit: 5,
-      });
+      const response = await fetch(
+        `https://api.geoapify.com/v1/geocode/autocomplete?text=${text}&apiKey=${process.env.GEOAPIFY_AUTOCOMPLETE_API_KEY}`
+      ).then((res) => res.json());
       setAddressSuggestions(response.features);
     }
   };
