@@ -1,20 +1,20 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import maplibregl, { Map, NavigationControl, Marker, GeolocateControl } from 'maplibre-gl';
+  import * as maplibregl from 'maplibre-gl';
 
-  let map: Map;
+  let map: maplibregl.Map;
 
-  function initializeMap() {
+  function initializeMap(latitude: number, longitude: number) {
     const apiKey = "52e42fd1727343ddb979120e8c9d473c";
     map = new maplibregl.Map({
       container: 'my-map',
       style: `https://maps.geoapify.com/v1/styles/positron/style.json?apiKey=${apiKey}`,
-      center: [0, 0],
-      zoom: 2
+      center: [longitude, latitude],
+      zoom: 12
     });
-    map.addControl(new NavigationControl());
+    map.addControl(new maplibregl.NavigationControl());
 
-    const geolocateControl = new GeolocateControl({
+    const geolocateControl = new maplibregl.GeolocateControl({
       positionOptions: {
         enableHighAccuracy: true
       },
@@ -22,21 +22,28 @@
     });
     map.addControl(geolocateControl);
 
+    new maplibregl.Marker()
+      .setLngLat([longitude, latitude])
+      .addTo(map);
+
     geolocateControl.on('geolocate', async (e) => {
       const { longitude, latitude } = e.coords;
       const response = await fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=${apiKey}`);
       const locationData = await response.json();
-
-      new Marker()
-        .setLngLat([longitude, latitude])
-        .addTo(map);
-
       console.log(locationData); // This will give you more precise location details
     });
   }
 
   onMount(() => {
-    initializeMap();
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(position => {
+        const { latitude, longitude } = position.coords;
+        initializeMap(latitude, longitude);
+      });
+    } else {
+      // Default location if geolocation is not available
+      initializeMap(0, 0);
+    }
   });
 </script>
 
