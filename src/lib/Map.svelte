@@ -1,35 +1,49 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
-  import maplibregl from 'maplibre-gl';
+  import maplibregl, { Map, NavigationControl, Marker, GeolocateControl } from 'maplibre-gl';
 
-  let map;
+  let map: Map;
+
+  function initializeMap() {
+    const apiKey = "52e42fd1727343ddb979120e8c9d473c";
+    map = new maplibregl.Map({
+      container: 'my-map',
+      style: `https://maps.geoapify.com/v1/styles/positron/style.json?apiKey=${apiKey}`,
+      center: [0, 0],
+      zoom: 2
+    });
+    map.addControl(new NavigationControl());
+
+    const geolocateControl = new GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true
+      },
+      trackUserLocation: true
+    });
+    map.addControl(geolocateControl);
+
+    geolocateControl.on('geolocate', async (e) => {
+      const { longitude, latitude } = e.coords;
+      const response = await fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=${apiKey}`);
+      const locationData = await response.json();
+
+      new Marker()
+        .setLngLat([longitude, latitude])
+        .addTo(map);
+
+      console.log(locationData); // This will give you more precise location details
+    });
+  }
 
   onMount(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(position => {
-        const { latitude, longitude } = position.coords;
-        map = new maplibregl.Map({
-          container: 'map',
-          style: 'https://maps.geoapify.com/v1/styles/positron/style.json?apiKey=52e42fd1727343ddb979120e8c9d473c',
-          center: [longitude, latitude],
-          zoom: 12
-        });
-
-        new maplibregl.Marker()
-          .setLngLat([longitude, latitude])
-          .addTo(map);
-
-        map.addControl(new maplibregl.NavigationControl());
-        map.addControl(new maplibregl.ScaleControl({ maxWidth: 80, unit: 'metric' }));
-      });
-    }
+    initializeMap();
   });
 </script>
 
-<div id="map" style="width: 100%; height: 100vh;"></div>
+<div id="my-map"></div>
 
 <style>
-  #map {
+  #my-map {
     width: 100%;
     height: 100vh;
   }
