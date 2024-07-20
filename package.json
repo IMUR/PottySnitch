@@ -25,6 +25,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@geoapify/geocoder-autocomplete": "^2.0.1",
     "bits-ui": "^0.21.12",
     "clsx": "^2.1.1",
     "commander": "^12.1.0",

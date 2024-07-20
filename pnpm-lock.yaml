@@ -12,6 +12,9 @@ importers:
 
   .:
     dependencies:
+      '@geoapify/geocoder-autocomplete':
+        specifier: ^2.0.1
+        version: 2.0.1
       bits-ui:
         specifier: ^0.21.12
         version: 0.21.12(svelte@4.2.18)
@@ -400,6 +403,9 @@ packages:
   '@gcornut/valibot-json-schema@0.31.0':
     resolution: {integrity: sha512-3xGptCurm23e7nuPQkdrE5rEs1FeTPHhAUsBuwwqG4/YeZLwJOoYZv+fmsppUEfo5y9lzUwNQrNqLS/q7HMc7g==}
     hasBin: true
+
+  '@geoapify/geocoder-autocomplete@2.0.1':
+    resolution: {integrity: sha512-uylT+V33dcYsCdTfmzx6kH6wgQLaGWeGYY4S1ko54W6wTYfua2VfMV6rOvaxqYg3J8WFCtWoUozWG8Xm3p3h+w==}
 
   '@hapi/hoek@9.3.0':
     resolution: {integrity: sha512-/c6rf4UJlmHlC9b5BaNvzAcFv7HZ2QHaV0D4/HNlBdvFnvQq8RI4kYdhyPCl7Xj+oWvTWQ8ujhqS53LIgAe6KQ==}
@@ -1942,6 +1948,8 @@ snapshots:
       esbuild: 0.23.0
       esbuild-runner: 2.2.2(esbuild@0.23.0)
     optional: true
+
+  '@geoapify/geocoder-autocomplete@2.0.1': {}
 
   '@hapi/hoek@9.3.0':
     optional: true

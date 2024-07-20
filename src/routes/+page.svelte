@@ -2,15 +2,6 @@
   import Map from '$lib/Map.svelte';
   import { writable } from 'svelte/store';
   import { onMount } from 'svelte';
-  import type { SvelteComponent } from 'svelte';
-
-  let Form: typeof SvelteComponent;
-  let Input: typeof SvelteComponent;
-  let Select: typeof SvelteComponent;
-  let Button: typeof SvelteComponent;
-
-  const pottyRules = ["Open to all", "Residents only", "Customers only"];
-  const pottyTypes = ["Standard", "Accessible", "Portable"];
 
   let showPopup = writable(false);
 
@@ -18,13 +9,55 @@
     showPopup.update(value => !value);
   }
 
+  let formData = {
+    name: '',
+    address: '',
+    rule: '',
+    notes: '',
+    type: ''
+  };
+
+  const pottyRules = ["Open to all", "Residents only", "Customers only"];
+  const pottyTypes = ["Standard", "Accessible", "Portable"];
+
+  function handleSubmit(event: Event) {
+    event.preventDefault();
+    console.log('Form submitted:', formData);
+    togglePopup();
+  }
+
   onMount(async () => {
-    try {
-      const shadcn = await import('shadcn-svelte');
-      ({ Form, Input, Select, Button } = shadcn);
-      console.log('Components loaded:', { Form, Input, Select, Button });
-    } catch (error) {
-      console.error('Failed to load components:', error);
+    const { GeocoderAutocomplete } = await import('@geoapify/geocoder-autocomplete');
+    const autocompleteInput = document.getElementById('potty-address') as HTMLInputElement;
+    if (autocompleteInput) {
+      const autocomplete = new GeocoderAutocomplete(autocompleteInput, '52e42fd1727343ddb979120e8c9d473c', {
+        placeholder: 'Enter potty address'
+      });
+
+      autocomplete.on('select', (location: any) => {
+        formData.address = location.properties.formatted;
+      });
+
+      // Adding custom styles to the Geoapify autocomplete elements
+      const styleElement = document.createElement('style');
+      styleElement.textContent = `
+        .geoapify-autocomplete-input {
+          width: 100%;
+        }
+        .geoapify-autocomplete-suggestions {
+          border: 1px solid #ccc;
+          border-radius: 15px;
+          margin-top: 15px;
+        }
+        .geoapify-autocomplete-suggestion {
+          padding: 10px;
+          cursor: pointer;
+        }
+        .geoapify-autocomplete-suggestion:hover {
+          background-color: #f0f0f0;
+        }
+      `;
+      document.head.appendChild(styleElement);
     }
   });
 </script>
@@ -34,19 +67,33 @@
   <button class="floating-button" on:click={togglePopup}>Add Potty</button>
   {#if $showPopup}
     <div class="popup-container">
-      {#if Form && Input && Select && Button}
-        <svelte:component this={Form}>
-          <svelte:component this={Input} name="potty-name" label="Potty Name" type="text" placeholder="Enter potty name" required />
-          <svelte:component this={Input} name="potty-address" label="Potty Address" type="search" placeholder="Enter potty address" required />
-          <svelte:component this={Select} name="potty-rule" label="Potty Rule" options={pottyRules} required />
-          <svelte:component this={Input} name="potty-notes" label="Potty Notes" type="text" placeholder="Enter potty notes" />
-          <svelte:component this={Select} name="potty-type" label="Potty Type" options={pottyTypes} required />
-          <svelte:component this={Button} type="submit">Submit</svelte:component>
-        </svelte:component>
-        <button on:click={togglePopup}>Close</button>
-      {:else}
-        <p>Loading form...</p>
-      {/if}
+      <form on:submit={handleSubmit}>
+        <label for="potty-name">Potty Name:</label>
+        <input id="potty-name" type="text" bind:value={formData.name} placeholder="Enter potty name" required />
+
+        <label for="potty-address">Potty Address:</label>
+        <input id="potty-address" type="search" bind:value={formData.address} required />
+
+        <label for="potty-rule">Potty Rule:</label>
+        <select id="potty-rule" bind:value={formData.rule} required>
+          {#each pottyRules as rule}
+            <option value={rule}>{rule}</option>
+          {/each}
+        </select>
+
+        <label for="potty-notes">Potty Notes:</label>
+        <input id="potty-notes" type="text" bind:value={formData.notes} placeholder="Enter potty notes" />
+
+        <label for="potty-type">Potty Type:</label>
+        <select id="potty-type" bind:value={formData.type} required>
+          {#each pottyTypes as type}
+            <option value={type}>{type}</option>
+          {/each}
+        </select>
+
+        <button type="submit">Submit</button>
+      </form>
+      <button on:click={togglePopup}>Close</button>
     </div>
   {/if}
 </div>
@@ -67,7 +114,7 @@
     background-color: rgba(255, 255, 255, 0.8);
     border: none;
     padding: 10px 20px;
-    border-radius: 5px;
+    border-radius: 15px;
     cursor: pointer;
     z-index: 1;
   }
@@ -81,7 +128,7 @@
     background-color: rgba(255, 255, 255, 0.9);
     border: 1px solid #ccc;
     padding: 20px;
-    border-radius: 5px;
+    border-radius: 15px;
   }
 
   .popup-container button {
@@ -89,7 +136,34 @@
     background-color: rgba(255, 255, 255, 0.8);
     border: none;
     padding: 10px;
-    border-radius: 5px;
+    border-radius: 15px;
+    cursor: pointer;
+  }
+
+  .popup-container form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .popup-container label {
+    margin-top: 10px;
+  }
+
+  .popup-container input,
+  .popup-container select {
+    margin-top: 15px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 15px;
+  }
+
+  .popup-container button[type="submit"] {
+    margin-top: 10px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 15px;
     cursor: pointer;
   }
 </style>
