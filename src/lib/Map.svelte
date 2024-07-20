@@ -51,7 +51,8 @@
 
 <style>
   #my-map {
-    width: 100%;
-    height: 100vh;
+    width: 600px;
+    height: 100%;
+    border-radius: 15px;
   }
 </style>
